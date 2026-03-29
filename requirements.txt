@@ -1,0 +1,11 @@
+asgiref==3.11.1
+Django==6.0.3
+django-bootstrap5==26.2
+iniconfig==2.3.0
+packaging==26.0
+pillow==12.1.1
+pluggy==1.6.0
+Pygments==2.19.2
+pytest==9.0.2
+python-dotenv==1.2.2
+sqlparse==0.5.5
