@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Главная</title>
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Управление отелем</h1>
+        <div class="menu">
+            <a href="{% url 'rooms:rooms' %}">Комнаты</a>
+            <a href="{% url 'rooms:elements' %}">Предметы</a>
+            <a href="{% url 'rooms:incompatible_elements' %}">Несовместимые предметы</a>
+        </div>
+    </div>
+</body>
+</html>

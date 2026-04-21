@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Комната {{ room.id }}{% endblock %}
+
+{% block content %}
+<div class="layout">
+    <div class="sidebar">
+        <a href="{% url 'rooms:rooms' %}">
+            <button>Назад</button>
+        </a>
+        <a href="{% url 'rooms:generate_room_elements' room.id %}">
+            <button>Сгенерировать наполнение комнаты</button>
+        </a>
+    </div>
+    <div class="content">
+        <h1>Комната {{ room.id }}</h1>
+        <p>Ценовая категория: {{ room.price_category }}</p>
+        <h2>Элементы комнаты:</h2>
+        <ul>
+            {% for element in elements %}
+                <li>
+                    <strong>{{ element.name }}</strong><br>
+                    Минимальная ценовая категория: {{ element.min_price_category }}<br>
+                    {% if element.is_required %}Обязательный{% else %}Необязательный{% endif %}
+                </li>
+            {% empty %}
+                <li>Элементов пока нет</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

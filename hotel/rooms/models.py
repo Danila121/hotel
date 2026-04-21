@@ -2,6 +2,8 @@ from django.db import models
 
 
 class RoomElement(models.Model):
+    def __str__(self):
+        return self.name
 
     id = models.AutoField(
         primary_key=True,
@@ -37,6 +39,17 @@ class RoomElement(models.Model):
 
 
 class Room(models.Model):
+    def __str__(self):
+        return f"Комната {self.id}"
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            existing_ids = set(Room.objects.values_list('id', flat=True))
+            new_id = 1
+            while new_id in existing_ids:
+                new_id += 1
+            self.id = new_id
+        super().save(*args, **kwargs)
 
     id = models.AutoField(
         primary_key=True,
@@ -56,6 +69,8 @@ class Room(models.Model):
 
 
 class PriceCategory(models.Model):
+    def __str__(self):
+        return self.name
 
     id = models.AutoField(
         primary_key=True,

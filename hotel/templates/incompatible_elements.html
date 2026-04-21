@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Несовместимые предметы{% endblock %}
+
+{% block content %}
+<div class="layout">
+    <div class="sidebar">
+        <a href="{% url 'rooms:incompatible_create' %}" class="btn">Добавить несовместимость</a>
+    </div>
+
+    <div class="content">
+        <h3>Список несовместимостей</h3>
+        <ul>
+            {% for incomp in incompatible_elements %}
+                <li>
+                    <strong>Несовместимость {{ incomp.id }}</strong><br>
+                    <a href="{% url 'rooms:incompatible_update' incomp.pk %}">Изменить</a> |
+                    <a href="{% url 'rooms:incompatible_delete' incomp.pk %}">Удалить</a>
+                </li>
+            {% empty %}
+                <li>Несовместимостей пока нет</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

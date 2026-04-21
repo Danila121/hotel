@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Генерация наполнения{% endblock %}
+
+{% block content %}
+<h1>Генерация наполнения для комнаты {{ room.id }}</h1>
+
+<a href="{% url 'rooms:room_detail' room.id %}">
+    <button>Назад к комнате</button>
+</a>
+{% endblock %}
