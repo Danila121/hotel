@@ -1,10 +1,11 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Room, RoomElement
-from .forms import RoomForm
+from django.shortcuts import render, get_object_or_404
+from .models import Room, RoomElement, RoomElementAssignment, IncompatibleRoomElement
+from .forms import ElementSelectionForm
+from django.db.models import Count, Q
 
 
 def index(request):
-    return (render(request, "index.html"))
+    return render(request, "index.html")
 
 
 def rooms(request):
@@ -17,54 +18,14 @@ def rooms(request):
 
 def room_detail(request, pk):
     room = get_object_or_404(Room, pk=pk)
-    elements = RoomElement.objects.filter(room_id=room)
+    assignments = RoomElementAssignment.objects.filter(room=room)
+    elements = [assignment.element for assignment in assignments]
     context = {
         "room": room,
-        "elements": elements
+        "elements": elements,
+        "assignments": assignments,
     }
     return render(request, "room_detail.html", context)
-
-
-def room_create(request):
-    if request.method == 'POST':
-        form = RoomForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('rooms:rooms')
-    else:
-        form = RoomForm()
-    context = {
-        'form': form,
-        'title': 'Добавить комнату'
-    }
-    return render(request, 'room_form.html', context)
-
-
-def room_update(request, pk):
-    room = get_object_or_404(Room, pk=pk)
-    if request.method == 'POST':
-        form = RoomForm(request.POST, instance=room)
-        if form.is_valid():
-            form.save()
-            return redirect('rooms:rooms')
-    else:
-        form = RoomForm(instance=room)
-    context = {
-        'form': form,
-        'title': f'Изменить комнату {room.id}'
-    }
-    return render(request, 'room_form.html', context)
-
-
-def room_delete(request, pk):
-    room = get_object_or_404(Room, pk=pk)
-    if request.method == 'POST':
-        room.delete()
-        return redirect('rooms:rooms')
-    context = {
-        'room': room
-    }
-    return render(request, 'room_confirm_delete.html', context)
 
 
 def elements(request):
@@ -75,53 +36,7 @@ def elements(request):
     return render(request, "elements.html", context)
 
 
-def element_create(request):
-    if request.method == 'POST':
-        from .forms import RoomElementForm
-        form = RoomElementForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('rooms:elements')
-    else:
-        from .forms import RoomElementForm
-        form = RoomElementForm()
-    context = {
-        'form': form,
-        'title': 'Добавить предмет'
-    }
-    return render(request, 'element_form.html', context)
-
-
-def element_update(request, pk):
-    from .forms import RoomElementForm
-    element = get_object_or_404(RoomElement, pk=pk)
-    if request.method == 'POST':
-        form = RoomElementForm(request.POST, instance=element)
-        if form.is_valid():
-            form.save()
-            return redirect('rooms:elements')
-    else:
-        form = RoomElementForm(instance=element)
-    context = {
-        'form': form,
-        'title': f'Изменить предмет {element.name}'
-    }
-    return render(request, 'element_form.html', context)
-
-
-def element_delete(request, pk):
-    element = get_object_or_404(RoomElement, pk=pk)
-    if request.method == 'POST':
-        element.delete()
-        return redirect('rooms:elements')
-    context = {
-        'element': element
-    }
-    return render(request, 'element_confirm_delete.html', context)
-
-
 def incompatible_elements(request):
-    from .models import IncompatibleRoomElement
     incompatible_qs = IncompatibleRoomElement.objects.all()
     context = {
         "incompatible_elements": incompatible_qs
@@ -129,55 +44,43 @@ def incompatible_elements(request):
     return render(request, "incompatible_elements.html", context)
 
 
-def incompatible_create(request):
-    from .forms import IncompatibleRoomElementForm
+def select_room(request):
+    form = ElementSelectionForm()
+    results = None
+    perfect = False
+
     if request.method == 'POST':
-        form = IncompatibleRoomElementForm(request.POST)
+        form = ElementSelectionForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('rooms:incompatible_elements')
-    else:
-        form = IncompatibleRoomElementForm()
-    context = {
+            selected_elements = form.cleaned_data['elements']
+            total_requested = len(selected_elements)
+
+            # Аннотируем каждую комнату количеством выбранных элементов в ней
+            rooms_with_counts = Room.objects.annotate(
+                matches=Count('roomelementassignment__element',
+                    filter=Q(roomelementassignment__element__in=selected_elements))
+            )
+
+            # Проверяем, есть ли комнаты со 100% совпадением
+            exact_rooms = rooms_with_counts.filter(matches=total_requested)
+            if exact_rooms.exists():
+                perfect = True
+                results = [(room, 100.0) for room in exact_rooms]
+            else:
+                perfect = False
+                # Отбираем комнаты с ненулевым совпадением, считаем процент
+                rooms_with_matches = rooms_with_counts.filter(matches__gt=0)
+                temp = []
+                for room in rooms_with_matches:
+                    percent = (room.matches / total_requested) * 100
+                    temp.append((room, percent))
+                # Сортируем по убыванию процента
+                temp.sort(key=lambda x: x[1], reverse=True)
+                top3 = temp[:3]
+                results = [(room, round(percent, 1)) for room, percent in top3]
+
+    return render(request, 'select_room.html', {
         'form': form,
-        'title': 'Добавить несовместимость'
-    }
-    return render(request, 'incompatible_form.html', context)
-
-
-def incompatible_update(request, pk):
-    from .forms import IncompatibleRoomElementForm
-    from .models import IncompatibleRoomElement
-    incompatible = get_object_or_404(IncompatibleRoomElement, pk=pk)
-    if request.method == 'POST':
-        form = IncompatibleRoomElementForm(request.POST, instance=incompatible)
-        if form.is_valid():
-            form.save()
-            return redirect('rooms:incompatible_elements')
-    else:
-        form = IncompatibleRoomElementForm(instance=incompatible)
-    context = {
-        'form': form,
-        'title': 'Изменить несовместимость'
-    }
-    return render(request, 'incompatible_form.html', context)
-
-
-def incompatible_delete(request, pk):
-    from .models import IncompatibleRoomElement
-    incompatible = get_object_or_404(IncompatibleRoomElement, pk=pk)
-    if request.method == 'POST':
-        incompatible.delete()
-        return redirect('rooms:incompatible_elements')
-    context = {
-        'incompatible': incompatible
-    }
-    return render(request, 'incompatible_confirm_delete.html', context)
-
-
-def generate_room_elements(request, pk):
-    room = get_object_or_404(Room, pk=pk)
-    context = {
-        'room': room
-    }
-    return render(request, 'generate_room_elements.html', context)
+        'results': results,
+        'perfect': perfect,
+    })

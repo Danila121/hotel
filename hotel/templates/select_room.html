@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Подбор комнаты{% endblock %}
+{% block content %}
+<div class="layout">
+    <div class="content">
+        <h2>Подбор комнаты</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Подобрать</button>
+        </form>
+
+        {% if results %}
+            <h3>Результаты подбора</h3>
+            {% if perfect %}
+                <p>Найдены комнаты, полностью удовлетворяющие вашему запросу:</p>
+                <ul>
+                    {% for room, percent in results %}
+                        <li>
+                            <a href="{% url 'rooms:room_detail' room.id %}">
+                                Комната {{ room.id }} – {{ room.room_type.name }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>Нет 100% совпадений. Топ-3 комнаты по проценту совпадения:</p>
+                <ol>
+                    {% for room, percent in results %}
+                        <li>
+                            <a href="{% url 'rooms:room_detail' room.id %}">
+                                Комната {{ room.id }} ({{ room.room_type.name }})
+                            </a>
+                            – совпадение {{ percent }}%
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

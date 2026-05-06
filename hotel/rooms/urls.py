@@ -10,20 +10,6 @@ urlpatterns = [
         name='index'
     ),
     path(
-        'rooms/<int:pk>/update/',
-        views.room_update,
-        name='room_update'),
-    path(
-        'rooms/<int:pk>/delete/',
-        views.room_delete,
-        name='room_delete'
-    ),
-    path(
-        'rooms/create/',
-        views.room_create,
-        name='room_create'
-    ),
-    path(
         'rooms/<int:pk>/',
         views.room_detail,
         name='room_detail'
@@ -39,43 +25,13 @@ urlpatterns = [
         name='elements'
     ),
     path(
-        'elements/create/',
-        views.element_create,
-        name='element_create'
-    ),
-    path(
-        'elements/<int:pk>/update/',
-        views.element_update,
-        name='element_update'
-    ),
-    path(
-        'elements/<int:pk>/delete/',
-        views.element_delete,
-        name='element_delete'
-    ),
-    path(
         'incompatible-elements',
         views.incompatible_elements,
         name='incompatible_elements'
     ),
     path(
-        'incompatible-elements/create/',
-        views.incompatible_create,
-        name='incompatible_create'
-    ),
-    path(
-        'incompatible-elements/<int:pk>/update/',
-        views.incompatible_update,
-        name='incompatible_update'
-    ),
-    path(
-        'incompatible-elements/<int:pk>/delete/',
-        views.incompatible_delete,
-        name='incompatible_delete'
-    ),
-    path(
-        'rooms/<int:pk>/generate/',
-        views.generate_room_elements,
-        name='generate_room_elements'
+        'select/',
+        views.select_room,
+        name='select_room'
     ),
 ]

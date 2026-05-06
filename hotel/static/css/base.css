@@ -1,0 +1,193 @@
+/* ---------- Базовые сбросы и шрифты ---------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* ---------- Шапка ---------- */
+.header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 20px 40px;
+    text-align: center;
+}
+
+.header a {
+    color: white;
+    text-decoration: none;
+    font-size: 2rem;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.header a:hover {
+    color: #ecf0f1;
+}
+
+/* ---------- Главная область ---------- */
+.main {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 0 20px;
+    min-height: 60vh;
+}
+
+/* ---------- Меню на главной (index) ---------- */
+.menu {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.menu h3 {
+    margin: 15px 0;
+    font-size: 1.4rem;
+}
+
+.menu a {
+    color: #2980b9;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 10px 20px;
+    display: inline-block;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.menu a:hover {
+    background-color: #2980b9;
+    color: white;
+    border-color: #2980b9;
+}
+
+/* ---------- Универсальный контейнер ---------- */
+.container {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* ---------- Макет с боковой панелью (room_detail) ---------- */
+.layout {
+    display: flex;
+    gap: 20px;
+}
+
+.sidebar {
+    flex: 0 0 200px;
+}
+
+.content {
+    flex: 1;
+}
+
+/* ---------- Кнопки ---------- */
+button {
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-block;
+    text-decoration: none;
+}
+
+button:hover {
+    background-color: #1c5980;
+}
+
+a button {
+    /* если кнопка внутри ссылки */
+    text-decoration: none;
+    color: white;
+}
+
+/* ---------- Списки комнат, предметов, несовместимостей ---------- */
+ul {
+    list-style: none;
+    margin-top: 15px;
+}
+
+ul li {
+    background: white;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border-left: 5px solid #2980b9;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+ul li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+ul li a {
+    text-decoration: none;
+    color: #2c3e50;
+    display: block;
+}
+
+ul li strong {
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+
+/* ---------- Формы ---------- */
+form {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+form p {
+    margin-bottom: 15px;
+}
+
+label {
+    font-weight: 500;
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* ---------- Футер ---------- */
+.footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #2c3e50;
+    color: #aaa;
+    margin-top: 40px;
+    font-size: 0.9rem;
+}
+
+/* ---------- Адаптивность ---------- */
+@media (max-width: 768px) {
+    .layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        order: -1; /* боковая панель сверху */
+    }
+
+    .header a {
+        font-size: 1.5rem;
+    }
+}
