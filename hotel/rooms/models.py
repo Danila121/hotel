@@ -117,7 +117,8 @@ class IncompatibleRoomElement(models.Model):
 
 
 class RoomElementAssignment(models.Model):
-
+    def __str__(self):
+        return f"Комната {self.room_id} - элемент {self.element_id}"
     room = models.ForeignKey(
         "Room",
         on_delete=models.CASCADE,
