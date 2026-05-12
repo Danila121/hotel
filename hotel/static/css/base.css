@@ -47,57 +47,12 @@ body {
     width: 100%;
 }
 
-/* ---------- Меню на главной (index) ---------- */
-.menu {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    text-align: center;
-}
-
-.menu h3 {
-    margin: 15px 0;
-    font-size: 1.4rem;
-}
-
-.menu a {
-    color: #2980b9;
-    text-decoration: none;
-    font-weight: 500;
-    padding: 10px 20px;
-    display: inline-block;
-    border: 2px solid transparent;
-    border-radius: 6px;
-    transition: all 0.2s;
-}
-
-.menu a:hover {
-    background-color: #2980b9;
-    color: white;
-    border-color: #2980b9;
-}
-
 /* ---------- Универсальный контейнер ---------- */
 .container {
     background: white;
     padding: 25px;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-/* ---------- Макет с боковой панелью (room_detail) ---------- */
-.layout {
-    display: flex;
-    gap: 20px;
-}
-
-.sidebar {
-    flex: 0 0 200px;
-}
-
-.content {
-    flex: 1;
 }
 
 /* ---------- Кнопки ---------- */
@@ -119,53 +74,13 @@ button:hover {
 }
 
 a button {
-    /* если кнопка внутри ссылки */
     text-decoration: none;
     color: white;
 }
 
-/* ---------- Списки комнат, предметов, несовместимостей ---------- */
-ul {
-    list-style: none;
-    margin-top: 15px;
-}
-
-ul li {
-    background: white;
-    padding: 15px 20px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    border-left: 5px solid #2980b9;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    transition: transform 0.15s, box-shadow 0.15s;
-}
-
-ul li:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-}
-
-ul li a {
-    text-decoration: none;
-    color: #2c3e50;
-    display: block;
-}
-
-ul li strong {
-    font-size: 1.1rem;
-    color: #2c3e50;
-}
-
 /* ---------- Формы ---------- */
-form {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
+.form-group {
     margin-bottom: 20px;
-}
-
-form p {
-    margin-bottom: 15px;
 }
 
 label {
@@ -174,26 +89,97 @@ label {
     margin-bottom: 5px;
 }
 
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    border-color: #2980b9;
+    outline: none;
+}
+
+/* ---------- Интерфейс выбора элементов ---------- */
+#elements-selection {
+    margin-top: 25px;
+}
+
+#sort-groups-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.sort-group {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.sort-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.element-select {
+    width: 100%;
+}
+
+#generate-btn {
+    background-color: #27ae60;
+}
+
+#generate-btn:hover {
+    background-color: #1e8449;
+}
+
+/* ---------- Результаты генерации ---------- */
+#result-container {
+    margin-top: 30px;
+}
+
+#result-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+#result-list .list-group-item {
+    background: white;
+    padding: 12px 18px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border-left: 5px solid #2980b9;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    font-size: 0.95rem;
+    transition: transform 0.1s;
+}
+
+#result-list .list-group-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
 /* ---------- Футер ---------- */
 .footer {
     text-align: center;
     padding: 20px;
     background-color: #2c3e50;
+    color: #aaa;
     font-size: 0.9rem;
-    margin-top: auto
-    font-size: 0.9rem;
+    margin-top: auto;
 }
 
 /* ---------- Адаптивность ---------- */
 @media (max-width: 768px) {
-    .layout {
-        flex-direction: column;
-    }
-
-    .sidebar {
-        order: -1; /* боковая панель сверху */
-    }
-
     .header a {
         font-size: 1.5rem;
     }

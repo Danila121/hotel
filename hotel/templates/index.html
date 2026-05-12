@@ -1,13 +1,231 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="container">
-  <div class="menu">
-    <h2>Подбор комнаты</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Подобрать</button>
-    </form>
-  </div>
+	<h2>Подбор комнаты</h2>
+
+	<div class="form-group">
+		<label for="room-type-select">Тип номера</label>
+		<select id="room-type-select" class="form-control" autocomplete="off">
+			<option value="" selected>-- выберите тип --</option>
+			{% for room_type in room_types %}
+				<option value="{{ room_type.name }}">{{ room_type.name }}</option>
+			{% endfor %}
+		</select>
+	</div>
+
+	<div id="elements-selection" style="display: none;">
+		<h3>Элементы комнаты</h3>
+		<div id="sort-groups-container"></div>
+		<button type="button" id="generate-btn" style="margin-top: 15px;">
+			Сгенерировать номер
+		</button>
+	</div>
+
+	<div id="result-container" style="display: none; margin-top: 30px;">
+		<h3>Допустимые варианты</h3>
+		<div id="result-list"></div>
+	</div>
 </div>
+
+<script>
+	const typesData = {{ types_data_json|safe }};
+</script>
+
+<script>
+	function getCookie(name) {
+		let cookieValue = null;
+		if (document.cookie && document.cookie !== '') {
+			const cookies = document.cookie.split(';');
+			for (let i = 0; i < cookies.length; i++) {
+				const cookie = cookies[i].trim();
+				if (cookie.substring(0, name.length + 1) === (name + '=')) {
+					cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+					break;
+				}
+			}
+		}
+		return cookieValue;
+	}
+
+	document.addEventListener('DOMContentLoaded', function() {
+		const roomTypeSelect = document.getElementById('room-type-select');
+		const elementsSelection = document.getElementById('elements-selection');
+		const sortGroupsContainer = document.getElementById('sort-groups-container');
+		const generateBtn = document.getElementById('generate-btn');
+		const resultContainer = document.getElementById('result-container');
+		const resultList = document.getElementById('result-list');
+
+		let currentTypeData = null;
+
+		// Сброс значения при загрузке
+		roomTypeSelect.value = '';
+
+		roomTypeSelect.addEventListener('change', function() {
+			const selectedType = this.value;
+			if (!selectedType) {
+				elementsSelection.style.display = 'none';
+				resultContainer.style.display = 'none';
+				currentTypeData = null;
+				return;
+			}
+
+			currentTypeData = typesData.find(t => t.room_type === selectedType);
+			if (!currentTypeData) return;
+
+			renderSorts(currentTypeData);
+			elementsSelection.style.display = 'block';
+			resultContainer.style.display = 'none';
+		});
+
+		generateBtn.addEventListener('click', function() {
+			if (!currentTypeData) {
+				alert('Сначала выберите тип номера');
+				return;
+			}
+
+			const selected = [];
+			const groups = document.querySelectorAll('.sort-group');
+			groups.forEach(group => {
+				const select = group.querySelector('.element-select');
+				if (select.value) {
+					selected.push({
+						element: select.value,
+						quantity: 1
+					});
+				}
+			});
+
+			const csrftoken = getCookie('csrftoken');
+
+			fetch('/generate/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': csrftoken,
+					'X-Requested-With': 'XMLHttpRequest'
+				},
+				body: JSON.stringify({
+					room_type: currentTypeData.room_type,
+					selected: selected
+				})
+			})
+			.then(response => response.json())
+			.then(data => {
+				resultContainer.style.display = 'block';
+				if (data.error) {
+					resultList.innerHTML = `<p class="text-danger">Ошибка: ${data.error}</p>`;
+				} else if (data.variants && data.variants.length > 0) {
+					let html = '<ul class="list-group">';
+					data.variants.forEach(variant => {
+						html += `<li class="list-group-item">${formatVariant(variant)}</li>`;
+					});
+					html += '</ul>';
+					resultList.innerHTML = html;
+				} else {
+					resultList.innerHTML = '<p>Нет допустимых вариантов</p>';
+				}
+			})
+			.catch(err => {
+				resultContainer.style.display = 'block';
+				resultList.innerHTML = `<p class="text-danger">Ошибка соединения: ${err.message}</p>`;
+			});
+		});
+
+		function renderSorts(typeData) {
+			sortGroupsContainer.innerHTML = '';
+
+			typeData.sorts.forEach(sort => {
+				const template = document.getElementById('sort-group-template');
+				if (!template) return;
+				const clone = template.content.cloneNode(true);
+
+				const groupDiv = clone.querySelector('.sort-group');
+				const label = clone.querySelector('.sort-label');
+				const select = clone.querySelector('.element-select');
+
+				groupDiv.dataset.sort = sort.name;
+				label.textContent = sort.name;
+
+				select.innerHTML = '<option value="">-- не выбрано --</option>';
+				sort.elements.forEach(el => {
+					const option = document.createElement('option');
+					option.value = el.name;
+					option.textContent = el.name;
+					option.dataset.id = el.id;
+					select.appendChild(option);
+				});
+
+				select.addEventListener('change', function() {
+					updateIncompatibilities();
+				});
+
+				sortGroupsContainer.appendChild(clone);
+			});
+
+			updateIncompatibilities();
+		}
+
+		function updateIncompatibilities() {
+			if (!currentTypeData) return;
+
+			const selectedElements = [];
+			const groups = document.querySelectorAll('.sort-group');
+			groups.forEach(group => {
+				const select = group.querySelector('.element-select');
+				if (select.value) {
+					selectedElements.push(select.value);
+				}
+			});
+
+			groups.forEach(group => {
+				const select = group.querySelector('.element-select');
+				const currentValue = select.value;
+
+				for (let option of select.options) {
+					if (option.value === '') continue;
+					let disabled = false;
+					for (let sel of selectedElements) {
+						if (sel === option.value) continue;
+						if (isIncompatible(option.value, sel)) {
+							disabled = true;
+							break;
+						}
+					}
+					option.disabled = disabled;
+				}
+
+				if (currentValue && select.options[select.selectedIndex]?.disabled) {
+					select.value = '';
+				}
+			});
+		}
+
+		function isIncompatible(el1, el2) {
+			if (!currentTypeData.incompatibilities) return false;
+			return currentTypeData.incompatibilities.some(pair =>
+				(pair[0] === el1 && pair[1] === el2) ||
+				(pair[0] === el2 && pair[1] === el1)
+			);
+		}
+
+		function formatVariant(variant) {
+			if (Array.isArray(variant)) {
+				return variant.map(e => e.name).join(', ');
+			} else if (typeof variant === 'string') {
+				return variant;
+			} else if (variant.elements) {
+				return variant.elements.map(e => e.name).join(', ');
+			}
+			return JSON.stringify(variant);
+		}
+	});
+</script>
+
+<template id="sort-group-template">
+	<div class="sort-group" data-sort="">
+		<label class="sort-label"></label>
+		<select class="form-control element-select"></select>
+	</div>
+</template>
 {% endblock %}
