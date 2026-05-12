@@ -1,8 +1,6 @@
 from django.contrib import admin
-from .models import RoomElement, RoomType, Room, ElementType, IncompatibleRoomElement, RoomElementAssignment
-admin.site.register(Room)
-admin.site.register(RoomType)
-admin.site.register(RoomElement)
-admin.site.register(ElementType)
+from .models import HotelRoomElement, HotelRoomType, ElementSort, IncompatibleRoomElement
+admin.site.register(HotelRoomType)
+admin.site.register(HotelRoomElement)
+admin.site.register(ElementSort)
 admin.site.register(IncompatibleRoomElement)
-admin.site.register(RoomElementAssignment)

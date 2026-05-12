@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container">
-    <div class="menu">
-        <h3><a href="{% url 'rooms:rooms' %}">Комнаты</a></h3>
-        <h3><a href="{% url 'rooms:elements' %}">Предметы</a></h3>
-        <h3><a href="{% url 'rooms:incompatible_elements' %}">Несовместимые предметы</a></h3>
-        <h3><a href="{% url 'rooms:select_room' %}">Подобрать комнату</a></h3>
-    </div>
+  <div class="menu">
+    <h2>Подбор комнаты</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Подобрать</button>
+    </form>
+  </div>
 </div>
 {% endblock %}
