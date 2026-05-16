@@ -2,22 +2,30 @@
 
 {% block content %}
 <div class="container">
-	<h2>Подбор комнаты</h2>
-
-	<div class="form-group">
-		<label for="room-type-select">Тип номера</label>
-		<select id="room-type-select" class="form-control" autocomplete="off">
-			<option value="" selected>-- выберите тип --</option>
-			{% for room_type in room_types %}
-				<option value="{{ room_type.name }}">{{ room_type.name }}</option>
-			{% endfor %}
-		</select>
+	<div style="margin-bottom: 20px;">
+		<a href="{% url 'rooms:room_type' %}" class="btn-back">
+			← Назад к выбору типа номера
+		</a>
 	</div>
+	
+	<h2>Подбор комнаты для номера: <span id="current-room-type"></span></h2>
 
-	<div id="elements-selection" style="display: none;">
+	<div id="elements-selection">
 		<h3>Элементы комнаты</h3>
 		<div id="sort-groups-container"></div>
-		<button type="button" id="generate-btn" style="margin-top: 15px;">
+		
+		<div class="budget-block">
+			<div class="budget-input-group">
+				<label for="budget-input">Ваш бюджет (руб.):</label>
+				<input type="number" id="budget-input" class="form-control" placeholder="Введите сумму" value="50000">
+			</div>
+			<div class="min-price-group">
+				<strong>Минимальная стоимость комплектации:</strong>
+				<span id="min-price">0</span> руб.
+			</div>
+		</div>
+		
+		<button type="button" id="generate-btn" class="btn-generate">
 			Сгенерировать номер
 		</button>
 	</div>
@@ -28,204 +36,375 @@
 	</div>
 </div>
 
+<style>
+	.btn-back {
+		display: inline-block;
+		padding: 10px 20px;
+		background-color: #6c757d;
+		color: white;
+		text-decoration: none;
+		border-radius: 6px;
+		transition: all 0.3s;
+		font-size: 14px;
+	}
+	
+	.btn-back:hover {
+		background-color: #5a6268;
+		color: white;
+		text-decoration: none;
+		transform: translateX(-3px);
+	}
+	
+	.budget-block {
+		margin: 20px 0;
+		padding: 15px;
+		background-color: #f8f9fa;
+		border-radius: 8px;
+		border: 1px solid #e0e0e0;
+	}
+	
+	.budget-input-group {
+		margin-bottom: 10px;
+	}
+	
+	.budget-input-group label {
+		margin-right: 10px;
+		font-weight: bold;
+	}
+	
+	.budget-input-group input {
+		width: 200px;
+		display: inline-block;
+		padding: 8px;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+	}
+	
+	.min-price-group {
+		font-size: 16px;
+	}
+	
+	.btn-generate {
+		padding: 10px 20px;
+		background-color: #28a745;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 16px;
+		transition: all 0.3s;
+	}
+	
+	.btn-generate:hover:not(:disabled) {
+		background-color: #218838;
+		transform: translateY(-2px);
+	}
+	
+	.btn-generate:disabled {
+		background-color: #6c757d;
+		cursor: not-allowed;
+	}
+	
+	.sort-group {
+		margin-bottom: 15px;
+		padding: 12px;
+		border: 1px solid #ddd;
+		border-radius: 6px;
+		background-color: #fff;
+	}
+	
+	.sort-label {
+		font-weight: bold;
+		display: block;
+		margin-bottom: 8px;
+	}
+	
+	.element-select {
+		width: 100%;
+		padding: 8px;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+	}
+	
+	.list-group {
+		list-style: none;
+		padding: 0;
+	}
+	
+	.list-group-item {
+		padding: 12px;
+		margin-bottom: 8px;
+		background-color: #f8f9fa;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+	}
+	
+	.loading {
+		text-align: center;
+		padding: 20px;
+		color: #6c757d;
+		font-style: italic;
+	}
+	
+	.text-danger {
+		color: #dc3545;
+	}
+</style>
+
 <script>
-	const typesData = {{ types_data_json|safe }};
+const typesData = {{ types_data_json|safe }};
 </script>
 
 <script>
-	function getCookie(name) {
-		let cookieValue = null;
-		if (document.cookie && document.cookie !== '') {
-			const cookies = document.cookie.split(';');
-			for (let i = 0; i < cookies.length; i++) {
-				const cookie = cookies[i].trim();
-				if (cookie.substring(0, name.length + 1) === (name + '=')) {
-					cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-					break;
-				}
-			}
-		}
-		return cookieValue;
+document.addEventListener('DOMContentLoaded', function() {
+	const sortGroupsContainer = document.getElementById('sort-groups-container');
+	const generateBtn = document.getElementById('generate-btn');
+	const resultContainer = document.getElementById('result-container');
+	const resultList = document.getElementById('result-list');
+	const currentRoomTypeSpan = document.getElementById('current-room-type');
+	const budgetInput = document.getElementById('budget-input');
+	const minPriceSpan = document.getElementById('min-price');
+
+	let currentTypeData = null;
+	let currentElementsCost = {};
+
+	function getRoomTypeFromUrl() {
+		const urlParams = new URLSearchParams(window.location.search);
+		return urlParams.get('room_type');
 	}
 
-	document.addEventListener('DOMContentLoaded', function() {
-		const roomTypeSelect = document.getElementById('room-type-select');
-		const elementsSelection = document.getElementById('elements-selection');
-		const sortGroupsContainer = document.getElementById('sort-groups-container');
-		const generateBtn = document.getElementById('generate-btn');
-		const resultContainer = document.getElementById('result-container');
-		const resultList = document.getElementById('result-list');
+	function loadRoomType(roomTypeName) {
+		if (!roomTypeName) {
+			currentRoomTypeSpan.textContent = '';
+			currentTypeData = null;
+			return;
+		}
 
-		let currentTypeData = null;
+		currentTypeData = typesData.find(t => t.room_type === roomTypeName);
+		if (!currentTypeData) return;
 
-		// Сброс значения при загрузке
-		roomTypeSelect.value = '';
-
-		roomTypeSelect.addEventListener('change', function() {
-			const selectedType = this.value;
-			if (!selectedType) {
-				elementsSelection.style.display = 'none';
-				resultContainer.style.display = 'none';
-				currentTypeData = null;
-				return;
-			}
-
-			currentTypeData = typesData.find(t => t.room_type === selectedType);
-			if (!currentTypeData) return;
-
-			renderSorts(currentTypeData);
-			elementsSelection.style.display = 'block';
-			resultContainer.style.display = 'none';
-		});
-
-		generateBtn.addEventListener('click', function() {
-			if (!currentTypeData) {
-				alert('Сначала выберите тип номера');
-				return;
-			}
-
-			const selected = [];
-			const groups = document.querySelectorAll('.sort-group');
-			groups.forEach(group => {
-				const select = group.querySelector('.element-select');
-				if (select.value) {
-					selected.push({
-						element: select.value,
-						quantity: 1
-					});
-				}
-			});
-
-			const csrftoken = getCookie('csrftoken');
-
-			fetch('/generate/', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRFToken': csrftoken,
-					'X-Requested-With': 'XMLHttpRequest'
-				},
-				body: JSON.stringify({
-					room_type: currentTypeData.room_type,
-					selected: selected
-				})
-			})
-			.then(response => response.json())
-			.then(data => {
-				resultContainer.style.display = 'block';
-				if (data.error) {
-					resultList.innerHTML = `<p class="text-danger">Ошибка: ${data.error}</p>`;
-				} else if (data.variants && data.variants.length > 0) {
-					let html = '<ul class="list-group">';
-					data.variants.forEach(variant => {
-						html += `<li class="list-group-item">${formatVariant(variant)}</li>`;
-					});
-					html += '</ul>';
-					resultList.innerHTML = html;
-				} else {
-					resultList.innerHTML = '<p>Нет допустимых вариантов</p>';
-				}
-			})
-			.catch(err => {
-				resultContainer.style.display = 'block';
-				resultList.innerHTML = `<p class="text-danger">Ошибка соединения: ${err.message}</p>`;
+		currentTypeData.sorts.forEach(sort => {
+			sort.elements.forEach(el => {
+				currentElementsCost[el.name] = el.cost;
 			});
 		});
 
-		function renderSorts(typeData) {
-			sortGroupsContainer.innerHTML = '';
+		currentRoomTypeSpan.textContent = roomTypeName;
+		renderSorts(currentTypeData);
+		updateMinPrice();
+	}
 
-			typeData.sorts.forEach(sort => {
-				const template = document.getElementById('sort-group-template');
-				if (!template) return;
-				const clone = template.content.cloneNode(true);
+	function updateMinPrice() {
+		if (!currentTypeData) return;
 
-				const groupDiv = clone.querySelector('.sort-group');
-				const label = clone.querySelector('.sort-label');
-				const select = clone.querySelector('.element-select');
-
-				groupDiv.dataset.sort = sort.name;
-				label.textContent = sort.name;
-
-				select.innerHTML = '<option value="">-- не выбрано --</option>';
-				sort.elements.forEach(el => {
-					const option = document.createElement('option');
-					option.value = el.name;
-					option.textContent = el.name;
-					option.dataset.id = el.id;
-					select.appendChild(option);
-				});
-
-				select.addEventListener('change', function() {
-					updateIncompatibilities();
-				});
-
-				sortGroupsContainer.appendChild(clone);
-			});
-
-			updateIncompatibilities();
-		}
-
-		function updateIncompatibilities() {
-			if (!currentTypeData) return;
-
-			const selectedElements = [];
-			const groups = document.querySelectorAll('.sort-group');
-			groups.forEach(group => {
-				const select = group.querySelector('.element-select');
-				if (select.value) {
-					selectedElements.push(select.value);
+		let total = 0;
+		const groups = document.querySelectorAll('.sort-group');
+		
+		groups.forEach(group => {
+			const select = group.querySelector('.element-select');
+			const isRequired = group.querySelector('.sort-label').dataset.isRequired === 'true';
+			
+			if (select.value) {
+				total += currentElementsCost[select.value] || 0;
+			} else if (isRequired) {
+				const sortName = group.dataset.sort;
+				const sortData = currentTypeData.sorts.find(s => s.name === sortName);
+				if (sortData && sortData.elements.length > 0) {
+					const minCostElement = sortData.elements.reduce((min, el) => 
+						(el.cost < min.cost) ? el : min
+					, sortData.elements[0]);
+					total += minCostElement.cost;
 				}
-			});
-
-			groups.forEach(group => {
-				const select = group.querySelector('.element-select');
-				const currentValue = select.value;
-
-				for (let option of select.options) {
-					if (option.value === '') continue;
-					let disabled = false;
-					for (let sel of selectedElements) {
-						if (sel === option.value) continue;
-						if (isIncompatible(option.value, sel)) {
-							disabled = true;
-							break;
-						}
-					}
-					option.disabled = disabled;
-				}
-
-				if (currentValue && select.options[select.selectedIndex]?.disabled) {
-					select.value = '';
-				}
-			});
-		}
-
-		function isIncompatible(el1, el2) {
-			if (!currentTypeData.incompatibilities) return false;
-			return currentTypeData.incompatibilities.some(pair =>
-				(pair[0] === el1 && pair[1] === el2) ||
-				(pair[0] === el2 && pair[1] === el1)
-			);
-		}
-
-		function formatVariant(variant) {
-			if (Array.isArray(variant)) {
-				return variant.map(e => e.name).join(', ');
-			} else if (typeof variant === 'string') {
-				return variant;
-			} else if (variant.elements) {
-				return variant.elements.map(e => e.name).join(', ');
 			}
-			return JSON.stringify(variant);
+		});
+		
+		minPriceSpan.textContent = total;
+		
+		if (budgetInput.value) {
+			const budget = parseFloat(budgetInput.value);
+			if (total > budget) {
+				minPriceSpan.style.color = 'red';
+				generateBtn.disabled = true;
+			} else {
+				minPriceSpan.style.color = 'green';
+				generateBtn.disabled = false;
+			}
+		} else {
+			minPriceSpan.style.color = 'black';
+			generateBtn.disabled = false;
 		}
+	}
+
+	generateBtn.addEventListener('click', function() {
+		if (!currentTypeData) {
+			alert('Сначала выберите тип номера');
+			return;
+		}
+
+		// Собираем ВСЕ выбранные элементы (и обязательные, и дополнительные)
+		const selected = [];
+		const groups = document.querySelectorAll('.sort-group');
+		groups.forEach(group => {
+			const select = group.querySelector('.element-select');
+			const isRequired = group.querySelector('.sort-label').dataset.isRequired === 'true';
+			
+			if (select.value) {
+				selected.push({
+					element: select.value,
+					quantity: 1,
+					is_required: isRequired
+				});
+			}
+		});
+
+		const budget = budgetInput.value ? parseFloat(budgetInput.value) : null;
+		const minPrice = parseFloat(minPriceSpan.textContent);
+
+		if (budget && minPrice > budget) {
+			alert(`Минимальная стоимость комплектации (${minPrice} руб.) превышает ваш бюджет (${budget} руб.)`);
+			return;
+		}
+
+		resultContainer.style.display = 'block';
+		resultList.innerHTML = '<div class="loading">Генерация вариантов...</div>';
+		generateBtn.disabled = true;
+		generateBtn.textContent = 'Генерация...';
+
+		// GET-запрос
+		const params = new URLSearchParams({
+			room_type: currentTypeData.room_type,
+			selected: JSON.stringify(selected),
+			budget: budget || ''
+		});
+
+		fetch(`/generate/?${params.toString()}`, {
+			method: 'GET',
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		})
+		.then(response => {
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+			}
+			return response.json();
+		})
+		.then(data => {
+			if (data.error) {
+				resultList.innerHTML = `<p class="text-danger">Ошибка: ${data.error}</p>`;
+			} else if (data.variants && data.variants.length > 0) {
+				let html = '<ul class="list-group">';
+				data.variants.forEach(variant => {
+					html += '<li class="list-group-item">';
+					html += '<strong>Состав:</strong><br>';
+					html += variant.elements.map(e => `&nbsp;&nbsp;• ${e.name} (${e.cost} руб.)`).join('<br>');
+					html += '<br><strong>Итого:</strong> ' + variant.total_cost + ' руб.';
+					html += '</li>';
+				});
+				html += '</ul>';
+				resultList.innerHTML = html;
+			} else {
+				resultList.innerHTML = '<p>Нет допустимых вариантов в рамках вашего бюджета</p>';
+			}
+		})
+		.catch(err => {
+			console.error('Error:', err);
+			resultList.innerHTML = `<p class="text-danger">Ошибка: ${err.message}</p>`;
+		})
+		.finally(() => {
+			generateBtn.disabled = false;
+			generateBtn.textContent = 'Сгенерировать номер';
+		});
 	});
-</script>
 
-<template id="sort-group-template">
-	<div class="sort-group" data-sort="">
-		<label class="sort-label"></label>
-		<select class="form-control element-select"></select>
-	</div>
-</template>
+	function renderSorts(typeData) {
+		sortGroupsContainer.innerHTML = '';
+
+		typeData.sorts.forEach(sort => {
+			const groupDiv = document.createElement('div');
+			groupDiv.className = 'sort-group';
+			groupDiv.dataset.sort = sort.name;
+			
+			const label = document.createElement('label');
+			label.className = 'sort-label';
+			label.textContent = `${sort.name} ${sort.is_required ? '(обязательный)' : '(дополнительный)'}`;
+			label.dataset.isRequired = sort.is_required;
+			
+			const select = document.createElement('select');
+			select.className = 'element-select';
+			select.innerHTML = '<option value="">-- не выбрано --</option>';
+			
+			const sortedElements = [...sort.elements].sort((a, b) => a.cost - b.cost);
+			sortedElements.forEach(el => {
+				const option = document.createElement('option');
+				option.value = el.name;
+				option.textContent = `${el.name} (${el.cost} руб.)`;
+				option.dataset.cost = el.cost;
+				select.appendChild(option);
+			});
+			
+			select.addEventListener('change', function() {
+				updateIncompatibilities();
+				updateMinPrice();
+			});
+			
+			groupDiv.appendChild(label);
+			groupDiv.appendChild(select);
+			sortGroupsContainer.appendChild(groupDiv);
+		});
+
+		updateIncompatibilities();
+	}
+
+	function updateIncompatibilities() {
+		if (!currentTypeData) return;
+
+		const selectedElements = [];
+		const groups = document.querySelectorAll('.sort-group');
+		groups.forEach(group => {
+			const select = group.querySelector('.element-select');
+			if (select.value) {
+				selectedElements.push(select.value);
+			}
+		});
+
+		groups.forEach(group => {
+			const select = group.querySelector('.element-select');
+			const currentValue = select.value;
+
+			for (let option of select.options) {
+				if (option.value === '') continue;
+				let disabled = false;
+				for (let sel of selectedElements) {
+					if (sel === option.value) continue;
+					if (isIncompatible(option.value, sel)) {
+						disabled = true;
+						break;
+					}
+				}
+				option.disabled = disabled;
+			}
+
+			if (currentValue && select.options[select.selectedIndex]?.disabled) {
+				select.value = '';
+			}
+		});
+	}
+
+	function isIncompatible(el1, el2) {
+		if (!currentTypeData.incompatibilities) return false;
+		return currentTypeData.incompatibilities.some(pair =>
+			(pair[0] === el1 && pair[1] === el2) ||
+			(pair[0] === el2 && pair[1] === el1)
+		);
+	}
+
+	const initialRoomType = getRoomTypeFromUrl();
+	if (initialRoomType) {
+		loadRoomType(initialRoomType);
+	}
+	
+	budgetInput.addEventListener('input', updateMinPrice);
+});
+</script>
 {% endblock %}

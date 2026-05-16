@@ -1,0 +1,38 @@
+<!-- rooms/templates/room_type.html -->
+{% extends "base.html" %}
+
+{% block title %}Выбор типа номера - Отель "Белый барашек"{% endblock %}
+
+{% block content %}
+<div class="room-type-container">
+    <h2>Выберите тип номера</h2>
+    
+    <div class="room-type-selector">
+        <select id="roomTypeSelect" class="room-type-dropdown">
+            <option value="">-- Выберите тип номера --</option>
+            {% for room_type in room_types %}
+            <option value="{{ room_type.name }}">{{ room_type.name }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <br>
+        <button id="goToIndexBtn" class="go-btn" disabled>Перейти к выбору элементов</button>
+    </div>
+</div>
+
+<script>
+    const select = document.getElementById('roomTypeSelect');
+    const button = document.getElementById('goToIndexBtn');
+    
+    select.addEventListener('change', function() {
+        button.disabled = !this.value;
+    });
+    
+    button.addEventListener('click', function() {
+        const roomType = select.value;
+        if (roomType) {
+            window.location.href = "{% url 'rooms:index' %}?room_type=" + encodeURIComponent(roomType);
+        }
+    });
+</script>
+{% endblock %}

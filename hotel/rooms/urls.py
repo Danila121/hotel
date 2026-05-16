@@ -1,20 +1,10 @@
-from . import views
 from django.urls import path
+from . import views
+
 app_name = 'rooms'
 
-
-from django.urls import path
-from . import views
-
 urlpatterns = [
-	path(
-        "",
-        views.index,
-        name="index"
-    ),
-	path(
-        "generate/",
-        views.generate_variants,
-        name="generate_variants"
-    ),
+    path("", views.room_type, name="room_type"),
+    path("index/", views.index, name="index"),
+    path("generate/", views.generate_variants, name="generate_variants"),
 ]
